@@ -1,0 +1,16 @@
+{
+  "name": "creative-lab",
+  "version": "3.0.0",
+  "description": "Creative Lab — тренажер креативності з AI",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@huggingface/inference": "latest",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
