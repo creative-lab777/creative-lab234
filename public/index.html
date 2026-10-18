@@ -29,9 +29,6 @@ h2{font-size:17px;margin-bottom:4px}
 .lead{color:var(--mut);font-size:14px;margin-bottom:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .g2 .card{margin-top:0}
-nav{display:flex;gap:6px;margin-bottom:20px}
-nav button{background:transparent;color:var(--mut);border-radius:999px;padding:10px 20px}
-nav button[aria-selected=true]{background:var(--acc2);border-color:var(--acc2);color:#fff}
 .seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;margin-bottom:16px}
 .seg button{border:0;background:transparent;color:var(--mut);border-radius:999px;padding:8px 16px}
 .seg button[aria-pressed=true]{background:var(--acc2);color:#fff}
@@ -58,10 +55,21 @@ textarea{width:100%;height:120px;resize:vertical;font:inherit;line-height:1.5;ba
 .big small{font-size:16px;color:var(--mut);font-weight:500}
 #res p{margin-top:10px}
 #res p b{color:var(--warm)}
-.chk{display:flex;gap:10px;align-items:center;margin:8px 0;font-size:14px;cursor:pointer}
-.chk input{width:18px;height:18px;accent-color:var(--acc2)}
 .note{margin-top:12px;font-size:14px;color:#c9c9d8}
-@media(max-width:800px){@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.grow{display:flex;gap:6px;flex-wrap:wrap}
+a.chip{display:inline-block;color:var(--txt);text-decoration:none;border:1px solid var(--line);background:#19192d;font-weight:700}
+#gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:14px}
+.gi{background:#101021;border:1px solid #292940;border-radius:14px;overflow:hidden}
+.gi img{width:100%;display:block}
+.gi figcaption{padding:12px;font-size:14px}
+.gi p{margin:6px 0;color:#c9c9d8;overflow-wrap:anywhere}
+.gi small{display:block;color:var(--mut);margin:6px 0 10px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;background:#1d1d33;border:1px solid var(--acc);padding:10px 18px;border-radius:12px;transition:.25s;pointer-events:none;z-index:9;max-width:92%;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:800px){.g2{grid-template-columns:1fr}.logo{font-size:28px}.stat{text-align:left}textarea{font-size:16px}}
+@media(max-width:480px){.wrap{width:94%;padding-top:20px}.card{padding:16px}.seg button{padding:8px 10px;font-size:13px}.words{gap:6px}#gal{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -75,11 +83,11 @@ textarea{width:100%;height:120px;resize:vertical;font:inherit;line-height:1.5;ba
   <div class="stat" id="stat"></div>
 </div>
 
-<nav role="tablist">
-  <button data-t="viz" aria-selected="true">Візуалізатор</button>
-  <button data-t="anti" aria-selected="false">Антишаблон</button>
-  <button data-t="free" aria-selected="false">Без AI</button>
-</nav>
+<div class="seg" id="modes" role="group" aria-label="Режим" style="margin-bottom:20px">
+  <button data-t="viz" aria-pressed="true">Візуалізатор</button>
+  <button data-t="anti" aria-pressed="false">Антишаблон</button>
+  <button data-t="mine" aria-pressed="false">Мої ідеї<span id="mcount"></span></button>
+</div>
 
 <!-- ВІЗУАЛІЗАТОР -->
 <section id="t-viz">
@@ -109,22 +117,11 @@ textarea{width:100%;height:120px;resize:vertical;font:inherit;line-height:1.5;ba
 
 <!-- КРОК 1 -->
 <div class="card">
-  <div class="seg" role="group" aria-label="Режим">
-    <button data-m="words" aria-pressed="true">Три слова</button>
-    <button data-m="problem" aria-pressed="false">Робоча проблема</button>
-  </div>
-
   <div id="wbox">
     <h2>Твої три слова</h2>
     <p class="lead">AI покаже, яку ідею з них вигадає кожен. Твоє завдання зробити зовсім іншу.</p>
     <div class="words" id="words"></div>
     <button id="roll" style="width:100%">🎲 Нові слова (🔒 слово лишається)</button>
-  </div>
-
-  <div id="pbox" hidden>
-    <h2>Твоя проблема</h2>
-    <p class="lead">Опиши робочу проблему. AI покаже рішення, яке запропонує будь-яка команда.</p>
-    <textarea id="problem" maxlength="400" placeholder="Наприклад: клієнти довго чекають відповіді в підтримці"></textarea>
   </div>
 
   <button class="pri" id="go" style="margin-top:14px">Показати шаблон</button>
@@ -155,35 +152,23 @@ textarea{width:100%;height:120px;resize:vertical;font:inherit;line-height:1.5;ba
 
 </section>
 
-<!-- БЕЗ AI -->
-<section id="t-free" hidden>
-<div class="card">
-  <div id="x-obv">
-    <h2>Спершу очевидне</h2>
-    <p class="lead">Перші думки в усіх однакові, цікаве починається після них. Випиши п'ять найочевидніших ідей, а потім вигадай шосту, не схожу на жодну з них.</p>
-    <div class="words" id="words3"></div>
-    <button id="roll3" style="width:100%">🎲 Нові слова (🔒 слово лишається)</button>
-    <h2 style="margin-top:18px">1. П'ять очевидних ідей <span class="mut" id="obvn" style="font-weight:500;font-size:14px">0 / 5</span></h2>
-    <textarea id="obv5" placeholder="Одна ідея в рядок. Пиши все, що спало на думку першим."></textarea>
-    <button class="pri" id="obvnext" style="margin-top:10px" disabled>Далі</button>
-    <div id="obvB" hidden>
-      <h2 style="margin-top:18px">2. Шоста ідея, не схожа на жодну з п'яти</h2>
-      <textarea id="obv6" placeholder="Що, якщо зробити навпаки, змінити масштаб або взяти щось з іншої сфери?"></textarea>
-      <button class="pri" id="obvchk" style="margin-top:10px">Перевірити себе</button>
-    </div>
-    <div id="obvC" hidden>
-      <h2 style="margin-top:18px">3. Чесний чек-лист</h2>
-      <label class="chk"><input type="checkbox"> Її не було б серед моїх п'яти</label>
-      <label class="chk"><input type="checkbox"> Її не вигадав би мій сусід чи колега</label>
-      <label class="chk"><input type="checkbox"> Вона мене самого трохи здивувала</label>
-      <label class="chk"><input type="checkbox"> Її можна пояснити одним реченням</label>
-      <p class="note" id="obvres"></p>
-      <button id="obvnew" style="width:100%;margin-top:12px">Новий раунд</button>
-    </div>
-  </div>
 
-</div>
+<!-- МОЇ ІДЕЇ -->
+<section id="t-mine" hidden>
+  <div class="card">
+    <div class="mrow">
+      <h2 style="margin:0">Мої ідеї</h2>
+      <div class="grow">
+        <button class="chip" id="mexp">⬇️ Скачати копію</button>
+        <button class="chip" id="mimp">⬆️ Завантажити копію</button>
+      </div>
+    </div>
+    <input type="file" id="mfile" accept="application/json,.json" hidden>
+    <p class="note">Ідеї зберігаються автоматично після кожної створеної картинки, у цьому браузері на цьому пристрої (останні 40). Щоб перенести їх на інший телефон чи комп'ютер, скачай копію та завантаж її там.</p>
+    <div id="gal"></div>
+  </div>
 </section>
+<div id="toast" role="status"></div>
 
 </div>
 
@@ -199,12 +184,101 @@ const h = (t, a = {}, ...c) => {
 };
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true } catch { return false } }
 };
 
 let S = { rounds: 0, best: 0, ...store.get("cl4", {}) };
 const renderStat = () => $("stat").replaceChildren(
   `Раундів: ${S.rounds}`, h("br"), S.best ? h("span", {}, "Найкраща відстань від шаблону: ", h("b", {}, S.best + "/10")) : "");
+
+/* ---------- збережені ідеї ---------- */
+const GK = "cl4g", MAX = 40;
+const gget = () => store.get(GK, []);
+let tt;
+function toast(m) {
+  const t = $("toast"); t.textContent = m; t.classList.add("on");
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2800);
+}
+function thumb(src) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onload = () => {
+      const k = Math.min(1, 480 / Math.max(i.width, i.height)), c = document.createElement("canvas");
+      c.width = i.width * k; c.height = i.height * k;
+      c.getContext("2d").drawImage(i, 0, 0, c.width, c.height);
+      res(c.toDataURL("image/jpeg", .72));
+    };
+    i.onerror = () => res("");
+    i.src = src;
+  });
+}
+// Якщо місця мало, прибираємо найстаріші. Якщо не вийшло зовсім, нічого не стираємо.
+function persist(list) {
+  const g = list.slice(0, MAX);
+  while (g.length) { if (store.set(GK, g)) return g; g.pop() }
+  return null;
+}
+async function saveIdea(item, image) {
+  item.id = Date.now(); item.img = await thumb(image);
+  const g = persist([item, ...gget()]);
+  renderMine();
+  toast(g && g.includes(item) ? "Збережено в «Мої ідеї»" : "Не вдалося зберегти: у браузері немає місця");
+  return item.id;
+}
+function updateIdea(id, patch) {
+  const g = gget(), x = g.find(i => i.id === id);
+  if (!x) return;
+  Object.assign(x, patch); store.set(GK, g); renderMine();
+}
+function delIdea(id) {
+  if (!confirm("Видалити цю ідею?")) return;
+  store.set(GK, gget().filter(x => x.id !== id)); renderMine();
+}
+function ideaCard(x) {
+  return h("figure", { class: "gi" },
+    x.img ? h("img", { src: x.img, alt: x.idea.slice(0, 100) }) : "",
+    h("figcaption", {},
+      h("span", { class: "tag" + (x.kind === "anti" ? " mine" : "") }, x.kind === "anti" ? "Антишаблон" : "Візуалізатор"),
+      x.words && x.words.length ? h("b", { style: "display:block;margin-top:8px" }, x.words.join(", ")) : "",
+      h("p", {}, x.idea),
+      x.cliche ? h("p", { class: "mut" }, "Шаблон: " + x.cliche) : "",
+      x.dist ? h("p", {}, h("b", { style: "color:var(--warm)" }, `Відстань від шаблону: ${x.dist}/10. `), x.verdict || "") : "",
+      h("small", {}, new Date(x.id).toLocaleString("uk-UA")),
+      h("div", { class: "grow" },
+        x.img ? h("a", { class: "chip", href: x.img, download: "idea-" + x.id + ".jpg" }, "⬇️ Зберегти") : "",
+        h("button", { class: "chip", onclick: () => delIdea(x.id) }, "Видалити"))));
+}
+function renderMine() {
+  const g = gget();
+  $("mcount").textContent = g.length ? ` (${g.length})` : "";
+  $("gal").replaceChildren(...(g.length ? g.map(ideaCard)
+    : [h("p", { class: "mut" }, "Тут з'являться твої ідеї. Створи першу картинку у «Візуалізаторі» чи «Антишаблоні», і вона збережеться сама.")]));
+}
+$("mexp").onclick = () => {
+  const a = h("a", { href: URL.createObjectURL(new Blob([JSON.stringify(gget())], { type: "application/json" })), download: "creative-lab-ideas.json" });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("mimp").onclick = () => $("mfile").click();
+$("mfile").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const arr = JSON.parse(await f.text());
+    if (!Array.isArray(arr)) throw new Error("bad");
+    const have = new Set(gget().map(x => x.id));
+    const add = arr.filter(x => x && typeof x.idea === "string" && Number.isFinite(x.id) && !have.has(x.id)).map(x => ({
+      id: x.id, kind: x.kind === "anti" ? "anti" : "viz", idea: x.idea.slice(0, 600),
+      words: Array.isArray(x.words) ? x.words.slice(0, 3).map(w => String(w).slice(0, 30)) : [],
+      img: typeof x.img === "string" && x.img.startsWith("data:image/") ? x.img : "",
+      cliche: typeof x.cliche === "string" ? x.cliche.slice(0, 300) : "",
+      dist: Number.isFinite(x.dist) ? x.dist : 0,
+      verdict: typeof x.verdict === "string" ? x.verdict.slice(0, 400) : ""
+    }));
+    const g = persist([...add, ...gget()].sort((a, b) => b.id - a.id));
+    renderMine();
+    toast(g ? `Додано ідей: ${add.length}` : "Не вдалося зберегти: у браузері немає місця");
+  } catch { toast("Це не схоже на файл із копією ідей") }
+};
 
 /* ---------- слова ---------- */
 const WORDS = [...new Set(`університет ракета риба кавун робот літак кіт океан дзеркало піцерія музей ліс телефон велосипед потяг кіно парасолька замок планета кав'ярня футбол книга будинок дрон парк монстр школа автомобіль музика час пінгвін магазин супергерой шафа піца дерево гроші сон місяць маяк годинник міст вулкан бібліотека хмара ключ сад павук корабель тінь лікарня пустеля вітер космонавт`.split(/\s+/))];
@@ -217,7 +291,7 @@ function rollWords() {
   renderWords();
 }
 function renderWords() {
-  ["words", "words2", "words3"].forEach(id => $(id).replaceChildren(...words.map((w, i) =>
+  ["words", "words2"].forEach(id => $(id).replaceChildren(...words.map((w, i) =>
     h("button", { class: "word", "aria-pressed": !!lock[i], title: "Натисни, щоб зафіксувати слово",
       onclick: () => { lock[i] = !lock[i]; renderWords() } }, (lock[i] ? "🔒 " : "") + w))));
 }
@@ -226,15 +300,8 @@ $("roll2").onclick = rollWords;
 
 /* ---------- режими ---------- */
 const TXT = {
-  words: { ph: "Не повторюй очевидне. Що, якщо поєднати ці слова так, як ніхто не очікує?", t: "Зроби принципово інакше" },
-  problem: { ph: "Яке рішення ніхто не запропонує? Що, якщо вирішити це від протилежного?", t: "Незвичне рішення" }
+  words: { ph: "Не повторюй очевидне. Що, якщо поєднати ці слова так, як ніхто не очікує?", t: "Зроби принципово інакше" }
 };
-document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
-  mode = b.dataset.m;
-  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
-  $("wbox").hidden = mode !== "words"; $("pbox").hidden = mode !== "problem";
-  resetRound();
-});
 
 const STY = [["auto", "Без стилю"], ["cinematic", "Кіно"], ["watercolor", "Акварель"], ["anime", "Аніме"], ["pixel", "Піксель-арт"], ["surreal", "Сюрреалізм"], ["clay", "3D-глина"]];
 function renderStyles() {
@@ -259,7 +326,7 @@ async function api(url, body, ms = 120000) {
   } finally { clearTimeout(t) }
 }
 const spinner = txt => h("div", { class: "ph" }, h("div", { class: "spin" }), txt);
-const topic = () => mode === "words" ? words.join(", ") : $("problem").value.trim();
+const topic = () => words.join(", ");
 
 function setBusy(b) {
   busy = b;
@@ -276,7 +343,6 @@ function resetRound() {
 async function showCliche() {
   if (busy) return;
   $("err").hidden = true;
-  if (mode === "problem" && $("problem").value.trim().length < 10) return showErr("Опиши проблему хоча б одним реченням.");
 
   setBusy(true);
   $("res").hidden = true; $("duel").hidden = false; cliche = null;
@@ -285,7 +351,7 @@ async function showCliche() {
   $("mimg").replaceChildren(h("div", { class: "ph" }, h("div", { style: "font-size:44px" }, "💡"), "Тут з'явиться твоя ідея"));
   $("idea").value = ""; $("idea").placeholder = TXT[mode].ph; $("mtitle").textContent = TXT[mode].t;
   try {
-    const d = await api("/api/cliche", { mode, words, problem: $("problem").value });
+    const d = await api("/api/cliche", { mode: "words", words });
     cliche = d.ua;
     $("cimg").replaceChildren(h("img", { src: d.image, alt: "Шаблонна ідея: " + d.ua }));
     $("ctext").textContent = d.ua;
@@ -306,9 +372,11 @@ async function make() {
 
   setBusy(true);
   $("mimg").replaceChildren(spinner("AI малює твою версію. Це займе 10–30 секунд."));
+  let savedId = null;
   try {
     const d = await api("/api/generate", { idea, words: mode === "words" ? words : [], style });
     $("mimg").replaceChildren(h("img", { src: d.image, alt: "Твоя версія: " + idea.slice(0, 100) }));
+    savedId = saveIdea({ kind: "anti", idea, words: [...words], cliche }, d.image);
   } catch (e) {
     $("mimg").replaceChildren(h("div", { class: "ph" }, "Картинка не вийшла"));
     showErr(e.message); setBusy(false); return;
@@ -319,6 +387,7 @@ async function make() {
   try {
     const c = await api("/api/compare", { topic: topic(), cliche, idea }, 60000);
     S.rounds++; S.best = Math.max(S.best, c.distance); store.set("cl4", S); renderStat();
+    if (savedId) savedId.then(id => updateIdea(id, { dist: c.distance, verdict: c.verdict }));
     const col = c.distance >= 7 ? "#6ee7b7" : c.distance >= 4 ? "#ffb86b" : "#ff9c9c";
     const label = c.distance >= 7 ? "Принципово інша ідея" : c.distance >= 4 ? "Те саме ядро з поворотом" : "Шаблон із прикрасами";
     $("res").replaceChildren(
@@ -338,15 +407,15 @@ $("mk").onclick = make;
 $("idea").addEventListener("keydown", e => { if (e.ctrlKey && e.key === "Enter") make() });
 
 function newRound() {
-  if (mode === "words") rollWords(); else $("problem").value = "";
+  rollWords();
   resetRound();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /* ---------- вкладки ---------- */
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
-  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["viz", "anti", "free"].forEach(k => $("t-" + k).hidden = b.dataset.t !== k);
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#modes button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  ["viz", "anti", "mine"].forEach(k => $("t-" + k).hidden = b.dataset.t !== k);
 });
 
 /* ---------- візуалізатор ---------- */
@@ -362,6 +431,7 @@ async function vmake() {
   try {
     const d = await api("/api/generate", { idea, words, style });
     vlast = d.image;
+    saveIdea({ kind: "viz", idea, words: [...words] }, d.image);
     $("vimg").replaceChildren(h("img", { src: d.image, alt: "Згенероване зображення: " + idea.slice(0, 100) }));
   } catch (e) {
     $("vimg").replaceChildren(h("div", { class: "ph" }, h("div", { style: "font-size:44px" }, "😕"), "Картинка не вийшла"));
@@ -372,36 +442,7 @@ $("vgo").onclick = vmake;
 $("videa").addEventListener("keydown", e => { if (e.ctrlKey && e.key === "Enter") vmake() });
 $("vdl").onclick = () => { if (vlast) h("a", { href: vlast, download: "creative-lab-" + Date.now() + ".png" }).click() };
 
-/* ---------- без AI ---------- */
-const lines = el => el.value.split("\n").map(x => x.trim()).filter(Boolean);
-
-/* 1. Спершу очевидне */
-const OBV_MSG = [
-  "Це ще шаблон. Спробуй перевернути ідею: що буде, якщо зробити все навпаки?",
-  "Поки схоже на очевидне. Додай несподіваний елемент з іншої сфери.",
-  "Уже цікаво. Ще один поворот, і ідея відірветься від очевидних.",
-  "Сильна ідея. Лишилося зробити її конкретнішою.",
-  "Відмінно: ідея вийшла далеко за межі очевидного. Запиши її, поки не забулася."
-];
-$("roll3").onclick = rollWords;
-$("obv5").oninput = () => { const n = lines($("obv5")).length; $("obvn").textContent = Math.min(n, 5) + " / 5"; $("obvnext").disabled = n < 5 };
-$("obvnext").onclick = () => { $("obvB").hidden = false; $("obv5").disabled = true; $("obvnext").hidden = true; $("obv6").focus() };
-$("obvchk").onclick = () => {
-  if ($("obv6").value.trim().length < 10) return;
-  $("obvC").hidden = false; $("obv6").disabled = true; $("obvchk").hidden = true;
-  $("obvres").textContent = OBV_MSG[0];
-};
-document.querySelectorAll("#obvC input").forEach(c => c.onchange =
-  () => $("obvres").textContent = OBV_MSG[document.querySelectorAll("#obvC input:checked").length]);
-$("obvnew").onclick = () => {
-  rollWords();
-  $("obv5").value = ""; $("obv5").disabled = false; $("obv6").value = ""; $("obv6").disabled = false;
-  $("obvB").hidden = true; $("obvC").hidden = true; $("obvnext").hidden = false; $("obvnext").disabled = true; $("obvchk").hidden = false;
-  $("obvn").textContent = "0 / 5";
-  document.querySelectorAll("#obvC input").forEach(c => c.checked = false);
-};
-
-rollWords(); renderStyles(); renderStat();
+rollWords(); renderStyles(); renderStat(); renderMine();
 </script>
 </body>
-</html>
+</html>і
