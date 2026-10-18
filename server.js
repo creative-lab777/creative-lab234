@@ -96,7 +96,9 @@ async function ask(system, user, maxTokens = 400) {
     ];
     if (PROVIDER === "cloudflare") {
         const r = await cf(CF_CHAT_MODEL, { messages, max_tokens: maxTokens });
-        return String(r.response || "").trim();
+        // Cloudflare інколи віддає відповідь уже як об'єкт, якщо вона схожа на JSON
+        const out = r.response ?? r.choices?.[0]?.message?.content ?? "";
+        return (typeof out === "string" ? out : JSON.stringify(out)).trim();
     }
     const r = await hf.chatCompletion({ model: HF_CHAT_MODEL, messages, max_tokens: maxTokens, temperature: 0.7 });
     return r.choices?.[0]?.message?.content?.trim() || "";
@@ -110,6 +112,20 @@ async function draw(prompt) {
     const image = await hf.textToImage({ model: HF_IMAGE_MODEL, inputs: prompt });
     const buffer = Buffer.from(await image.arrayBuffer());
     return `data:${image.type || "image/png"};base64,${buffer.toString("base64")}`;
+}
+
+// Просить AI відповісти JSON; якщо вийшла дурниця, пробує ще раз
+async function askJson(system, user, maxTokens = 400) {
+    let lastError;
+    for (let i = 0; i < 2; i++) {
+        try {
+            return parseJson(await ask(system, user, maxTokens));
+        } catch (e) {
+            lastError = e;
+            console.warn(`Спроба ${i + 1}: AI відповів некоректно (${e.message})`);
+        }
+    }
+    throw lastError;
 }
 
 // ---------- стилі ----------
@@ -150,12 +166,11 @@ app.post("/api/cliche", limiter(8, 60_000), async (req, res) => {
     }
 
     try {
-        const text = await ask(
+        const d = await askJson(
             mode === "words" ? SYS_WORDS : SYS_PROBLEM,
             mode === "words" ? `Words: ${words.join(", ")}` : `Problem: ${problem}`,
             300
         );
-        const d = parseJson(text);
         const ua = clean(d.ua, 300), en = clean(d.en, 500);
         if (!ua || !en) throw new Error("AI повернув неповну відповідь");
 
@@ -212,7 +227,7 @@ app.post("/api/compare", limiter(10, 60_000), async (req, res) => {
     }
 
     try {
-        const text = await ask(
+        const d = await askJson(
             `You are a strict but friendly creativity coach. Reply in Ukrainian.
 You get a topic, the OBVIOUS idea that everyone would propose, and the user's idea. Judge how far the user's idea is from the obvious one.
 distance: 1-3 = the same idea with decoration; 4-6 = same core with a twist; 7-10 = a fundamentally different concept.
@@ -221,7 +236,6 @@ Answer ONLY with JSON:
             `Topic: ${topic}\nObvious idea: ${cliche}\nUser's idea: ${idea}`,
             400
         );
-        const d = parseJson(text);
         res.json({
             distance: Math.min(10, Math.max(1, Math.round(Number(d.distance)) || 5)),
             verdict: clean(d.verdict, 400),
